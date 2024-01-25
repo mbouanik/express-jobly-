@@ -42,6 +42,19 @@ router.post("/", ensureAdmin, async function (req, res, next) {
   }
 });
 
+router.post(
+  "/:username/jobs/:id",
+  ensureCorrectUserOrAdmin,
+  async (req, res, next) => {
+    try {
+      const { username, id } = req.params;
+      const result = await User.applyForJob(username, id);
+      return res.status(201).json({ applied: result.job_id });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
 /** GET / => { users: [ {username, firstName, lastName, email }, ... ] }
  *
  * Returns list of all users.

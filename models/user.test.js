@@ -51,6 +51,19 @@ describe("authenticate", function () {
     }
   });
 });
+/************************************* apply */
+
+describe("apply for a job", () => {
+  test("apply", async () => {
+    const u1 = await db.query(
+      `SELECT username FROM users WHERE username= 'u1'`,
+    );
+    const j1 = await db.query(`SELECT id FROM jobs WHERE title= 'j1'`);
+
+    const resp = await User.applyForJob(u1.rows[0].username, j1.rows[0].id);
+    expect(resp).toEqual({ job_id: expect.any(Number) });
+  });
+});
 
 /************************************** register */
 
@@ -214,8 +227,7 @@ describe("update", function () {
 describe("remove", function () {
   test("works", async function () {
     await User.remove("u1");
-    const res = await db.query(
-        "SELECT * FROM users WHERE username='u1'");
+    const res = await db.query("SELECT * FROM users WHERE username='u1'");
     expect(res.rows.length).toEqual(0);
   });
 

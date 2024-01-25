@@ -95,6 +95,27 @@ class User {
     return user;
   }
 
+  static async applyForJob(username, id) {
+    const duplicateCheck = await db.query(
+      `SELECT * FROM applications WHERE job_id=$1 AND username=$2 `,
+      [id, username],
+    );
+    console.log(duplicateCheck.rows[0]);
+    if (duplicateCheck.rows[0]) {
+      throw new BadRequestError(
+        `Duplicate job_id: ${duplicateCheck.rows[0].job_id}`,
+      );
+    }
+    const res = await db.query(
+      `
+        INSERT INTO applications (username, job_id) 
+        VALUES ($1, $2) RETURNING job_id
+        `,
+      [username, id],
+    );
+    return res.rows[0];
+  }
+
   /** Find all users.
    *
    * Returns [{ username, first_name, last_name, email, is_admin }, ...]
@@ -138,6 +159,12 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${username}`);
 
+    const jobRes = await db.query(
+      ` SELECT job_id FROM applications WHERE username = $1`,
+      [username],
+    );
+    console.log(jobRes);
+    user.jobs = jobRes.rows;
     return user;
   }
 

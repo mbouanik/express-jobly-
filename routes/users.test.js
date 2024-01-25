@@ -22,6 +22,57 @@ afterAll(commonAfterAll);
 
 /************************************** POST /users */
 describe("POST admin /users", () => {
+  test("apply for a job  for user or admin ", async () => {
+    const u1 = await db.query(
+      `SELECT username FROM users WHERE username= 'u1'`,
+    );
+    const j1 = await db.query(`SELECT id FROM jobs WHERE title= 'j1'`);
+
+    const resp = await request(app)
+      .post(`/users/${u1.rows[0].username}/jobs/${j1.rows[0].id}`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.statusCode).toBe(201);
+    expect(resp.body).toEqual({ applied: expect.any(Number) });
+  });
+
+  test("apply for a job  for user or admin duplicate  ", async () => {
+    const u1 = await db.query(
+      `SELECT username FROM users WHERE username= 'u1'`,
+    );
+    const j1 = await db.query(`SELECT id FROM jobs WHERE title= 'j1'`);
+
+    await request(app)
+      .post(`/users/${u1.rows[0].username}/jobs/${j1.rows[0].id}`)
+      .set("authorization", `Bearer ${adminToken}`);
+
+    const resp = await request(app)
+      .post(`/users/${u1.rows[0].username}/jobs/${j1.rows[0].id}`)
+      .set("authorization", `Bearer ${adminToken}`);
+
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toEqual({
+      error: {
+        message: `Duplicate job_id: ${j1.rows[0].id}`,
+        status: 400,
+      },
+    });
+  });
+
+  test("apply for a job for non-admin or non-user ", async () => {
+    const u1 = await db.query(
+      `SELECT username FROM users WHERE username= 'u1'`,
+    );
+    const j1 = await db.query(`SELECT id FROM jobs WHERE title= 'j1'`);
+
+    const resp = await request(app).post(
+      `/users/${u1.rows[0].username}/jobs/${j1.rows[0].id}`,
+    );
+    expect(resp.statusCode).toBe(401);
+    expect(resp.body).toEqual({
+      error: { message: "Unauthorized", status: 401 },
+    });
+  });
+
   test("works for admin ", async () => {
     const resp = await request(app)
       .post("/users")
@@ -214,6 +265,8 @@ describe("GET /users", function () {
 
 describe("GET /users/:username", function () {
   test("works for users", async function () {
+    const j1 = await db.query(`SELECT id FROM jobs WHERE title='j1'`);
+    await User.applyForJob("u1", j1.rows[0].id);
     const resp = await request(app)
       .get(`/users/u1`)
       .set("authorization", `Bearer ${u1Token}`);
@@ -224,6 +277,7 @@ describe("GET /users/:username", function () {
         lastName: "U1L",
         email: "user1@user.com",
         isAdmin: false,
+        jobs: [expect.any(Object)],
       },
     });
   });
