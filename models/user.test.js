@@ -152,6 +152,7 @@ describe("get", function () {
       firstName: "U1F",
       lastName: "U1L",
       email: "u1@email.com",
+      jobs: [],
       isAdmin: false,
     });
   });
